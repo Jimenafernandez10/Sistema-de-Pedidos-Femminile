@@ -985,7 +985,17 @@ async function addPedido() {
     };
     const saved = await createPedido(payload);
     pedidos.unshift(saved);
-
+try {
+  await fetch("Thttps://script.google.com/u/0/home/projects/1pFGXpJ2GdEdDAwbrmGiwEEb1GAq1_xBie77VQWyQ733ad58XllYOyOUi/edit", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+} catch (err) {
+  console.error("Error enviando a Sheets:", err);
+}
     // Auto-cobro si dejó seña
     if (seña > 0) {
       const cob = await createCobro({ fecha: todayStr(), cli: nombre, tipo: 'Seña', monto: seña, forma: '—', notas: '' });
