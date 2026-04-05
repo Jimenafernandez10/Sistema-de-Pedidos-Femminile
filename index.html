@@ -707,7 +707,45 @@ const SUPABASE_ANON = 'sb_publishable_2L3GO_3f6GuiXedGAKZmfA_z-KUmmbj';         
 ══════════════════════════════════════════════════════════ */
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+// =============================
+// CARGAR CATALOGO DE PIJAMAS
+// =============================
 
+async function cargarCatalogoPijamas() {
+
+  const { data, error } = await db
+    .from("productos")
+    .select("*")
+    .eq("categoria", "pijamas")
+    .eq("activo", true);
+
+  if (error) {
+    console.error("Error cargando catálogo:", error);
+    return;
+  }
+
+  const subSelect   = document.getElementById("subcategoriaSelect");
+  const telaSelect  = document.getElementById("telaSelect");
+  const largoSelect = document.getElementById("largoSelect");
+  const estampaSelect = document.getElementById("estampaSelect");
+
+  // limpiar por si recarga
+  subSelect.innerHTML   = '<option value="">Elegir modelo</option>';
+  telaSelect.innerHTML  = '<option value="">Elegir tela</option>';
+  largoSelect.innerHTML = '<option value="">Elegir largo</option>';
+  estampaSelect.innerHTML = '<option value="">Elegir estampa</option>';
+
+  // obtener valores únicos
+  const subcategorias = [...new Set(data.map(p => p.subcategoria).filter(Boolean))];
+  const telas         = [...new Set(data.map(p => p.tela).filter(Boolean))];
+  const largos        = [...new Set(data.map(p => p.largo).filter(Boolean))];
+  const estampas      = [...new Set(data.map(p => p.estampa).filter(Boolean))];
+
+  subcategorias.forEach(v => subSelect.innerHTML += `<option>${v}</option>`);
+  telas.forEach(v         => telaSelect.innerHTML += `<option>${v}</option>`);
+  largos.forEach(v        => largoSelect.innerHTML += `<option>${v}</option>`);
+  estampas.forEach(v      => estampaSelect.innerHTML += `<option>${v}</option>`);
+}
 /* ══════════════════════════════════════════════════════════
    ESTADO LOCAL (cache)
 ══════════════════════════════════════════════════════════ */
@@ -1371,7 +1409,7 @@ function renderCharts() {
     toast('Error cargando datos: ' + err.message, 'error');
   }
 })();
-
+window.addEventListener("load", cargarCatalogoPijamas);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEdit(); });
 </script>
 </body>
