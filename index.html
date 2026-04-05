@@ -542,15 +542,30 @@ table.t tr.trow:hover td{background:#FAFAFA;cursor:pointer}
               <button class="seg-btn" id="sbL" onclick="selProv('l')">Lencería</button>
             </div>
             <div class="fg">
-              <div class="fld" id="wP" style="display:none"><label>Tipo de pijama</label>
-                <select id="ftP">
-                  <option value="">— elegir —</option>
-                  <option>Pijama corto</option><option>Pijama largo</option>
-                  <option>Pants</option><option>Pantuflones</option>
-                  <option>Conjunto satén</option><option>Conjunto flores</option>
-                  <option>Conjunto liso</option><option>Conjunto morley</option>
-                </select>
-              </div>
+              <!-- PIJAMAS DINÁMICO -->
+<div class="fld" id="wP" style="display:none">
+
+  <label>Modelo</label>
+  <select id="subcategoriaSelect">
+    <option value="">Elegir modelo</option>
+  </select>
+
+  <label>Tela</label>
+  <select id="telaSelect">
+    <option value="">Elegir tela</option>
+  </select>
+
+  <label>Largo</label>
+  <select id="largoSelect">
+    <option value="">Elegir largo</option>
+  </select>
+
+  <label>Estampa</label>
+  <select id="estampaSelect">
+    <option value="">Elegir estampa</option>
+  </select>
+
+</div>
               <div class="fld" id="wL" style="display:none"><label>Tipo de lencería</label>
                 <select id="ftL">
                   <option value="">— elegir —</option>
