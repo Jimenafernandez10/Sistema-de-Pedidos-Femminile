@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Femminile — Gestión de Pedidos</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ══════════════════════════════════════
+   RESET & TOKENS
+══════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --pink:#E91E63;--pink-light:#FFF1F6;--pink-mid:#F8BBD0;--pink-dark:#C2185B;
+  --cream:#FAF8F5;--white:#FFFFFF;
+  --sage:#7BAA9E;--sage-light:#EEF5F3;--sage-dark:#4A8078;
+  --amber:#F59E0B;--amber-light:#FFF8E1;
+  --text:#2B2B2B;--text-2:#6B6B6B;--text-3:#9E9E9E;
+  --border:#ECECEC;--border-2:#F5F5F5;
+  --shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
+  --shadow-md:0 2px 8px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.06);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.05);
+  --r:16px;--r-sm:10px;--r-xs:6px;
+  --sidebar:228px;--topbar:58px
+}
+html,body{height:100%;font-family:'Poppins',sans-serif;color:var(--text);background:var(--cream)}
+
+/* ══════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════ */
+.app{display:flex;height:100vh;overflow:hidden;background:var(--cream)}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:var(--sidebar);background:var(--white);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;z-index:50;
+  transition:transform .28s cubic-bezier(.4,0,.2,1)
+}
+.sidebar-logo{
+  padding:1.4rem 1.25rem 1rem;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border-2)
+}
+.logo-icon{width:30px;height:30px;flex-shrink:0}
+.brand-name{font-size:17px;font-weight:600;color:var(--pink);letter-spacing:-.3px;line-height:1}
+.brand-sub{font-size:10px;font-weight:400;color:var(--text-3);letter-spacing:.1px;margin-top:1px}
+.nav-wrap{padding:.85rem .75rem 0;flex:1;overflow-y:auto}
+.nav-label{font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text-3);padding:0 .5rem;margin-bottom:.4rem;display:block}
+.nitem{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:.62rem .75rem;border-radius:var(--r-sm);
+  cursor:pointer;font-size:13px;font-weight:500;color:var(--text-2);
+  transition:all .18s;margin-bottom:2px;
+  border:none;background:transparent;text-align:left;font-family:'Poppins',sans-serif
+}
+.nitem svg{flex-shrink:0;transition:opacity .18s;opacity:.65}
+.nitem:hover{background:var(--pink-light);color:var(--pink)}
+.nitem:hover svg{opacity:1}
+.nitem.on{background:var(--pink-light);color:var(--pink);font-weight:600}
+.nitem.on svg{opacity:1}
+.sidebar-footer{padding:.85rem 1.1rem;border-top:1px solid var(--border-2)}
+.sidebar-date{font-size:10px;color:var(--text-3);font-family:'Inter',sans-serif;line-height:1.5}
+.conn-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--sage);margin-right:5px;vertical-align:middle}
+.conn-dot.off{background:#F87171}
+
+/* ── Drawer overlay (mobile) ── */
+.drawer-bg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;
+  transition:opacity .25s
+}
+.drawer-bg.open{display:block}
+
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+
+/* ── Topbar ── */
+.topbar{
+  height:var(--topbar);background:var(--white);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 1.25rem;gap:12px;flex-shrink:0
+}
+.hamburger{
+  display:none;width:36px;height:36px;border-radius:var(--r-xs);
+  border:none;background:transparent;cursor:pointer;
+  align-items:center;justify-content:center;color:var(--text-2)
+}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text);flex:1;letter-spacing:-.2px}
+.btn-topbar{
+  display:flex;align-items:center;gap:6px;height:34px;padding:0 15px;
+  border-radius:99px;background:var(--pink);color:#fff;border:none;
+  cursor:pointer;font-size:12px;font-weight:600;font-family:'Poppins',sans-serif;
+  transition:all .18s;letter-spacing:.1px
+}
+.btn-topbar:hover{background:var(--pink-dark);transform:translateY(-1px);box-shadow:0 4px 12px rgba(233,30,99,.3)}
+.btn-topbar:active{transform:translateY(0)}
+
+/* ── Content ── */
+.content{flex:1;overflow-y:auto;padding:1.5rem;background:var(--cream)}
+.page{display:none}.page.on{display:block}
+.page-header{margin-bottom:1.5rem}
+.page-title{font-size:21px;font-weight:600;color:var(--text);letter-spacing:-.4px}
+.page-sub{font-size:12px;color:var(--text-3);margin-top:3px;font-family:'Inter',sans-serif}
+
+/* ══════════════════════════════════════
+   KPI CARDS
+══════════════════════════════════════ */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:1.5rem}
+.kpi-card{
+  background:var(--white);border-radius:var(--r);border:1px solid var(--border);
+  padding:1.1rem 1.15rem;transition:transform .2s,box-shadow .2s;cursor:default
+}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.kpi-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:.75rem;flex-shrink:0}
+.ki-rose{background:var(--pink-light)}.ki-sage{background:var(--sage-light)}
+.ki-amber{background:var(--amber-light)}.ki-slate{background:#F1F5F9}
+.kpi-label{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;font-family:'Inter',sans-serif}
+.kpi-value{font-size:22px;font-weight:600;color:var(--text);line-height:1;letter-spacing:-.5px}
+.kpi-sub{font-size:11px;color:var(--text-3);margin-top:4px;font-family:'Inter',sans-serif}
+
+/* ══════════════════════════════════════
+   CARDS
+══════════════════════════════════════ */
+.card{background:var(--white);border-radius:var(--r);border:1px solid var(--border);margin-bottom:1.25rem;overflow:hidden}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:.95rem 1.25rem;border-bottom:1px solid var(--border-2)}
+.card-title{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.card-body{padding:1.25rem}
+.card-footer{
+  padding:.75rem 1.25rem;background:var(--cream);border-top:1px solid var(--border-2);
+  display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--text-2);font-family:'Inter',sans-serif
+}
+.card-footer strong{color:var(--text);font-weight:500}
+.chart-wrap{position:relative;width:100%;height:165px}
+
+/* ══════════════════════════════════════
+   BADGES & DOTS
+══════════════════════════════════════ */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:10px;font-weight:600;white-space:nowrap;font-family:'Inter',sans-serif}
+.b-pink{background:var(--pink-light);color:var(--pink-dark)}
+.b-sage{background:var(--sage-light);color:var(--sage-dark)}
+.b-amber{background:var(--amber-light);color:#92400E}
+.b-green{background:#F0FDF4;color:#166534}
+.b-slate{background:#F1F5F9;color:#475569}
+.e0{background:var(--amber-light);color:#92400E}
+.e1{background:var(--pink-light);color:var(--pink-dark)}
+.e2{background:#EFF6FF;color:#1D4ED8}
+.e3{background:var(--sage-light);color:var(--sage-dark)}
+.e4{background:#F0FDF4;color:#166534}
+.e5{background:#F0FDF4;color:#166534}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.d-pink{background:var(--pink)}.d-sage{background:var(--sage)}.d-amber{background:var(--amber)}
+
+/* ══════════════════════════════════════
+   FORMS
+══════════════════════════════════════ */
+.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:1rem}
+.fg2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:1rem}
+.fld{display:flex;flex-direction:column;gap:6px}
+.fld label{font-size:11px;font-weight:600;color:var(--text-2);letter-spacing:.2px;font-family:'Inter',sans-serif}
+.fld input,.fld select,.fld textarea{
+  height:44px;padding:0 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+  background:var(--white);color:var(--text);font-size:13px;
+  font-family:'Inter',sans-serif;outline:none;width:100%;transition:border-color .18s,box-shadow .18s
+}
+.fld textarea{height:auto;padding:12px 14px;resize:vertical}
+.fld input:focus,.fld select:focus,.fld textarea:focus{
+  border-color:var(--pink);box-shadow:0 0 0 3px rgba(233,30,99,.1)
+}
+.fld input::placeholder,.fld textarea::placeholder{color:var(--text-3)}
+.fld select{
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239E9E9E' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px
+}
+.seg{display:flex;gap:4px;margin-bottom:1rem;background:var(--cream);padding:3px;border-radius:var(--r-sm);border:1px solid var(--border)}
+.seg-btn{
+  flex:1;height:36px;font-size:12px;font-weight:500;cursor:pointer;
+  border:none;border-radius:var(--r-xs);background:transparent;color:var(--text-2);
+  transition:all .18s;font-family:'Poppins',sans-serif
+}
+.seg-btn.sp{background:var(--white);color:var(--sage-dark);font-weight:600;box-shadow:var(--shadow-sm)}
+.seg-btn.sl{background:var(--white);color:var(--pink);font-weight:600;box-shadow:var(--shadow-sm)}
+.mpreview{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  border:1.5px solid var(--border);border-radius:var(--r-sm);overflow:hidden;margin-bottom:1rem
+}
+.mp-item{padding:10px 14px;border-right:1px solid var(--border)}
+.mp-item:last-child{border-right:none}
+.mp-label{font-size:10px;color:var(--text-3);margin-bottom:3px;font-family:'Inter',sans-serif;font-weight:500}
+.mp-val{font-size:15px;font-weight:600;color:var(--text);font-family:'Inter',sans-serif}
+.mp-val.pink{color:var(--pink)}.mp-val.sage{color:var(--sage-dark)}
+
+/* ══════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════ */
+.btn-primary{
+  width:100%;height:48px;background:var(--pink);color:#fff;border:none;
+  border-radius:var(--r-sm);font-size:14px;font-weight:600;cursor:pointer;
+  font-family:'Poppins',sans-serif;transition:all .2s;letter-spacing:.1px;
+  display:flex;align-items:center;justify-content:center;gap:8px
+}
+.btn-primary:hover{background:var(--pink-dark);transform:translateY(-1px);box-shadow:0 4px 18px rgba(233,30,99,.28)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{background:var(--border);color:var(--text-3);cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{
+  height:42px;padding:0 20px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+  background:transparent;color:var(--text-2);font-size:13px;cursor:pointer;
+  font-family:'Poppins',sans-serif;transition:all .18s;font-weight:500
+}
+.btn-ghost:hover{border-color:var(--text-2);color:var(--text);background:var(--cream)}
+
+/* ══════════════════════════════════════
+   TABLE
+══════════════════════════════════════ */
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.t{width:100%;border-collapse:collapse;table-layout:fixed}
+table.t th{
+  padding:9px 14px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--text-3);border-bottom:1px solid var(--border);
+  background:var(--cream);white-space:nowrap;font-family:'Inter',sans-serif
+}
+table.t td{
+  padding:12px 14px;border-bottom:1px solid var(--border-2);
+  font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;vertical-align:middle;font-family:'Inter',sans-serif
+}
+table.t tr:last-child td{border-bottom:none}
+table.t tr.trow:hover td{background:#FAFAFA;cursor:pointer}
+.tbl-action{
+  font-size:11px;color:var(--text-3);cursor:pointer;padding:3px 8px;
+  border-radius:var(--r-xs);border:1px solid var(--border);background:transparent;
+  font-family:'Poppins',sans-serif;transition:all .15s;margin-right:3px
+}
+.tbl-action:hover{background:var(--pink-light);color:var(--pink-dark);border-color:var(--pink-mid)}
+.tbl-action.del:hover{background:#FEF2F2;color:#DC2626;border-color:#FCA5A5}
+
+/* ── Mobile order cards ── */
+.order-cards{display:none;flex-direction:column;gap:10px}
+.oc{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.1rem;transition:box-shadow .2s}
+.oc:hover{box-shadow:var(--shadow)}
+.oc-top{display:flex;align-items:center;gap:10px;margin-bottom:.6rem}
+.oc-av{width:36px;height:36px;border-radius:50%;background:var(--pink-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--pink-dark);flex-shrink:0}
+.oc-name{font-size:13px;font-weight:600;line-height:1.2}
+.oc-ig{font-size:11px;color:var(--pink);margin-top:2px;font-family:'Inter',sans-serif}
+.oc-product{font-size:12px;color:var(--text-2);margin-bottom:.6rem;font-family:'Inter',sans-serif}
+.oc-bottom{display:flex;align-items:center;justify-content:space-between}
+.oc-total{font-size:14px;font-weight:600;font-family:'Inter',sans-serif}
+.oc-seña{font-size:11px;color:var(--text-3);margin-top:2px;font-family:'Inter',sans-serif}
+.oc-actions{display:flex;gap:8px;margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border-2)}
+.oc-btn{
+  flex:1;height:36px;border-radius:var(--r-xs);font-size:12px;font-weight:500;
+  cursor:pointer;font-family:'Poppins',sans-serif;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid var(--border)
+}
+.oc-btn-edit{background:var(--cream);color:var(--text-2)}
+.oc-btn-edit:hover{background:var(--pink-light);border-color:var(--pink-mid);color:var(--pink-dark)}
+.oc-btn-del{background:var(--cream);color:var(--text-3)}
+.oc-btn-del:hover{background:#FEF2F2;border-color:#FCA5A5;color:#DC2626}
+
+/* ── Avatar ── */
+.av{width:32px;height:32px;border-radius:50%;background:var(--pink-light);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--pink-dark);flex-shrink:0}
+
+/* ══════════════════════════════════════
+   FILTER CHIPS
+══════════════════════════════════════ */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+.chip{
+  height:32px;padding:0 14px;border-radius:99px;font-size:12px;font-weight:500;
+  cursor:pointer;border:1.5px solid var(--border);color:var(--text-2);
+  background:var(--white);transition:all .18s;font-family:'Poppins',sans-serif
+}
+.chip:hover{border-color:var(--pink-mid);color:var(--pink)}
+.chip.on{background:var(--pink);color:#fff;border-color:var(--pink)}
+
+/* ══════════════════════════════════════
+   STEP TRACKER
+══════════════════════════════════════ */
+.stepper{display:flex;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;margin-bottom:1rem}
+.step{
+  flex:1;padding:9px 4px;text-align:center;font-size:9px;font-weight:600;
+  cursor:pointer;color:var(--text-3);border-right:1px solid var(--border);
+  transition:all .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  letter-spacing:.1px;font-family:'Inter',sans-serif
+}
+.step:last-child{border-right:none}
+.step.done{color:var(--sage-dark);background:var(--sage-light)}
+.step.cur{color:var(--pink-dark);background:var(--pink-light);font-weight:700}
+.step:hover:not(.done):not(.cur){background:var(--cream)}
+
+/* ══════════════════════════════════════
+   MODAL
+══════════════════════════════════════ */
+.modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;
+  align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto
+}
+.modal-bg.open{display:flex}
+.modal{
+  background:var(--white);border-radius:var(--r);border:1px solid var(--border);
+  padding:1.5rem;width:100%;max-width:580px;box-shadow:var(--shadow-md);
+  margin:auto
+}
+.modal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.modal-title{font-size:16px;font-weight:600;color:var(--text)}
+.modal-x{
+  width:30px;height:30px;border-radius:50%;border:1px solid var(--border);
+  background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:var(--text-2);transition:all .15s
+}
+.modal-x:hover{background:var(--cream)}
+.modal-foot{display:flex;gap:10px;margin-top:1.25rem}
+
+/* ══════════════════════════════════════
+   TOAST
+══════════════════════════════════════ */
+.toast-wrap{position:fixed;top:1rem;right:1rem;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{
+  background:var(--white);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:.7rem 1.1rem;font-size:12px;font-weight:500;font-family:'Inter',sans-serif;
+  box-shadow:var(--shadow-md);min-width:220px;
+  animation:toastIn .25s ease;pointer-events:auto;
+  display:flex;align-items:center;gap:8px
+}
+.toast.success{border-left:3px solid var(--sage);color:var(--sage-dark)}
+.toast.error{border-left:3px solid #EF4444;color:#991B1B}
+.toast.loading{border-left:3px solid var(--amber);color:#92400E}
+@keyframes toastIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+.spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--pink);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ══════════════════════════════════════
+   LOADER
+══════════════════════════════════════ */
+.page-loader{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4rem 1rem;gap:12px;color:var(--text-3);font-size:13px;font-family:'Inter',sans-serif
+}
+.loader-ring{width:32px;height:32px;border:2.5px solid var(--border);border-top-color:var(--pink);border-radius:50%;animation:spin .8s linear infinite}
+
+/* ══════════════════════════════════════
+   CLIENT ROWS
+══════════════════════════════════════ */
+.cli-row{display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-bottom:1px solid var(--border-2);transition:background .15s}
+.cli-row:last-child{border-bottom:none}
+.cli-row:hover{background:#FAFAFA}
+.cli-av{width:42px;height:42px;border-radius:50%;background:var(--pink-light);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--pink-dark);flex-shrink:0}
+.cli-name{font-size:14px;font-weight:600}
+.cli-ig{font-size:11px;color:var(--pink);font-family:'Inter',sans-serif}
+.cli-stats{display:flex;gap:16px;margin-top:5px;flex-wrap:wrap}
+.cli-stat{font-size:11px;color:var(--text-3);font-family:'Inter',sans-serif}
+.cli-stat strong{color:var(--text);font-weight:500}
+
+/* ══════════════════════════════════════
+   EMPTY STATE
+══════════════════════════════════════ */
+.empty{padding:3rem 1rem;text-align:center;color:var(--text-3);font-size:13px}
+.empty-icon{font-size:2rem;display:block;margin-bottom:.6rem;opacity:.35}
+
+/* ══════════════════════════════════════
+   SECTION LABEL
+══════════════════════════════════════ */
+.slabel{font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text-3);margin-bottom:.6rem;display:block;font-family:'Inter',sans-serif}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+@media(max-width:720px){
+  .app{position:relative}
+  .sidebar{position:fixed;top:0;bottom:0;left:0;transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .hamburger{display:flex!important}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .kpi-value{font-size:19px}
+  .fg2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mpreview{grid-template-columns:repeat(2,1fr)}
+  .mp-item:nth-child(2){border-right:none}
+  .mp-item:nth-child(3),.mp-item:nth-child(4){border-top:1px solid var(--border)}
+  table.t,.tbl-scroll{display:none!important}
+  .order-cards{display:flex!important}
+  .content{padding:1rem}
+  .modal-bg{padding:1rem}
+}
+@media(min-width:721px){
+  .order-cards{display:none!important}
+  table.t{display:table!important}
+  .tbl-scroll{display:block!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ TOAST CONTAINER ══ -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- ══ EDIT MODAL ══ -->
+<div class="modal-bg" id="editBg">
+  <div class="modal">
+    <div class="modal-h">
+      <span class="modal-title">Editar pedido</span>
+      <button class="modal-x" onclick="closeEdit()">✕</button>
+    </div>
+    <div id="editBody"></div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="closeEdit()">Cancelar</button>
+      <button class="btn-primary" style="flex:1" id="btnSaveEdit" onclick="saveEdit()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Guardar cambios
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <svg class="logo-icon" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="15" cy="15" r="13.5" stroke="#E91E63" stroke-width="1.5"/>
+        <path d="M8.5 16.5c2-4.5 11-4.5 13 0" stroke="#E91E63" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="11" cy="12" r="1.3" fill="#E91E63"/>
+        <circle cx="19" cy="12" r="1.3" fill="#E91E63"/>
+      </svg>
+      <div>
+        <div class="brand-name">Femminile</div>
+        <div class="brand-sub">gestión de pedidos</div>
+      </div>
+    </div>
+
+    <div class="nav-wrap">
+      <span class="nav-label">Menú</span>
+      <button class="nitem on" onclick="goPage('dash',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        Dashboard
+      </button>
+      <button class="nitem" onclick="goPage('nuevo',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Nuevo pedido
+      </button>
+      <button class="nitem" onclick="goPage('pedidos',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+        Pedidos
+      </button>
+      <button class="nitem" onclick="goPage('cobros',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Cobros
+      </button>
+      <button class="nitem" onclick="goPage('clientas',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.87"/></svg>
+        Clientas
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div id="connStatus" class="sidebar-date">
+        <span class="conn-dot off" id="connDot"></span>
+        <span id="connText">Conectando...</span>
+      </div>
+      <div class="sidebar-date" id="sideDate" style="margin-top:4px"></div>
+    </div>
+  </aside>
+
+  <!-- DRAWER BG -->
+  <div class="drawer-bg" id="drawerBg" onclick="closeSidebar()"></div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="topbar-title" id="topTitle">Dashboard</span>
+      <button class="btn-topbar" onclick="goPage('nuevo',document.querySelector('.nitem:nth-child(2)'))">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo pedido
+      </button>
+    </header>
+
+    <div class="content">
+
+      <!-- ── DASHBOARD ── -->
+      <div id="pg-dash" class="page on">
+        <div class="page-header">
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub" id="dashSub"></div>
+        </div>
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:1.25rem">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Ventas por fecha</span></div>
+            <div style="padding:.75rem 1rem"><div class="chart-wrap"><canvas id="cVentas"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Por proveedor</span></div>
+            <div style="padding:.75rem 1rem">
+              <div class="chart-wrap"><canvas id="cProv"></canvas></div>
+              <div id="provLeg" style="display:flex;gap:14px;justify-content:center;margin-top:.5rem;font-size:11px;color:var(--text-3);font-family:'Inter',sans-serif"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><span class="dot d-amber"></span>&nbsp;Saldos pendientes</span>
+            <span class="badge b-amber" id="dpCount"></span>
+          </div>
+          <div class="tbl-scroll"><table class="t">
+            <thead><tr>
+              <th style="width:36px"></th><th style="width:145px">Clienta</th>
+              <th style="width:130px">Producto</th><th style="width:82px">Total</th>
+              <th style="width:82px">Seña</th><th style="width:88px">Debe</th>
+              <th style="width:140px">Estado</th>
+            </tr></thead>
+            <tbody id="dashPBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ── NUEVO PEDIDO ── -->
+      <div id="pg-nuevo" class="page">
+        <div class="page-header">
+          <div class="page-title">Nuevo pedido</div>
+          <div class="page-sub">Completá todos los datos y guardá</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title"><span class="dot d-pink"></span>&nbsp;Datos de la clienta</span></div>
+          <div class="card-body">
+            <div class="fg">
+              <div class="fld"><label>Nombre</label><input id="fn" placeholder="Valentina Sosa" autocomplete="off"></div>
+              <div class="fld"><label>Instagram</label><input id="fig" placeholder="@vale.styles" autocomplete="off"></div>
+              <div class="fld"><label>Teléfono</label><input id="ftel" placeholder="261 000-0000" type="tel"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title"><span class="dot d-sage"></span>&nbsp;Proveedor y producto</span></div>
+          <div class="card-body">
+            <span class="slabel">Seleccioná el proveedor</span>
+            <div class="seg" style="max-width:360px">
+              <button class="seg-btn" id="sbP" onclick="selProv('p')">Pijamas / pants</button>
+              <button class="seg-btn" id="sbL" onclick="selProv('l')">Lencería</button>
+            </div>
+            <div class="fg">
+              <div class="fld" id="wP" style="display:none"><label>Tipo de pijama</label>
+                <select id="ftP">
+                  <option value="">— elegir —</option>
+                  <option>Pijama corto</option><option>Pijama largo</option>
+                  <option>Pants</option><option>Pantuflones</option>
+                  <option>Conjunto satén</option><option>Conjunto flores</option>
+                  <option>Conjunto liso</option><option>Conjunto morley</option>
+                </select>
+              </div>
+              <div class="fld" id="wL" style="display:none"><label>Tipo de lencería</label>
+                <select id="ftL">
+                  <option value="">— elegir —</option>
+                  <option>Conjunto lencería</option><option>Bombacha encaje</option>
+                  <option>Bombacha algodón</option><option>Top lencería</option>
+                  <option>Conjunto verano</option><option>Conjunto satén</option>
+                </select>
+              </div>
+              <div class="fld"><label>Talle</label>
+                <select id="ftalle">
+                  <option value="">—</option>
+                  <option>XS</option><option>S</option><option>M</option>
+                  <option>L</option><option>XL</option><option>XXL</option>
+                  <option>T1</option><option>T2</option><option>T3</option><option>T4</option>
+                </select>
+              </div>
+              <div class="fld"><label>Color</label><input id="fcolor" placeholder="Rosa, Negro, Lila..." autocomplete="off"></div>
+              <div class="fld"><label>Cantidad</label><input id="fcant" type="number" min="1" value="1" oninput="calcP()"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title"><span class="dot d-amber"></span>&nbsp;Precios</span></div>
+          <div class="card-body">
+            <div class="fg2">
+              <div class="fld"><label>Precio de venta ($)</label><input id="fprecio" type="number" placeholder="0" oninput="calcP()"></div>
+              <div class="fld"><label>Costo unitario ($)</label><input id="fcosto" type="number" placeholder="0" oninput="calcP()"></div>
+              <div class="fld"><label>Seña pagada ($)</label><input id="fseña" type="number" placeholder="0" oninput="calcP()"></div>
+            </div>
+            <div class="mpreview">
+              <div class="mp-item"><div class="mp-label">Total venta</div><div class="mp-val" id="mpTotal">—</div></div>
+              <div class="mp-item"><div class="mp-label">Ganancia</div><div class="mp-val sage" id="mpGan">—</div></div>
+              <div class="mp-item"><div class="mp-label">Seña</div><div class="mp-val" id="mpSeña">—</div></div>
+              <div class="mp-item"><div class="mp-label">Saldo que debe</div><div class="mp-val pink" id="mpSaldo">—</div></div>
+            </div>
+            <div class="fld" style="margin-bottom:1rem">
+              <label>Notas (opcional)</label>
+              <textarea id="fnotas" placeholder="Detalles, indicaciones especiales..." rows="2"></textarea>
+            </div>
+            <button class="btn-primary" id="btnAdd" onclick="addPedido()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              Guardar pedido
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PEDIDOS ── -->
+      <div id="pg-pedidos" class="page">
+        <div class="page-header">
+          <div class="page-title">Pedidos</div>
+          <div class="page-sub" id="pedSub"></div>
+        </div>
+        <div class="chips" id="fchips">
+          <button class="chip on" onclick="setFilt('all',this)">Todos</button>
+          <button class="chip" onclick="setFilt('p',this)">Pijamas</button>
+          <button class="chip" onclick="setFilt('l',this)">Lencería</button>
+          <button class="chip" onclick="setFilt('pend',this)">Con saldo pendiente</button>
+          <button class="chip" onclick="setFilt('ent',this)">Entregados</button>
+        </div>
+        <div id="pedBlock"></div>
+      </div>
+
+      <!-- ── COBROS ── -->
+      <div id="pg-cobros" class="page">
+        <div class="page-header">
+          <div class="page-title">Cobros</div>
+          <div class="page-sub">Registrá cada pago recibido</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title"><span class="dot d-sage"></span>&nbsp;Registrar cobro</span></div>
+          <div class="card-body">
+            <div class="fg">
+              <div class="fld"><label>Clienta</label><input id="cc" placeholder="Nombre de la clienta" autocomplete="off"></div>
+              <div class="fld"><label>Tipo de pago</label>
+                <select id="ct"><option>Seña (50%)</option><option>Saldo restante</option><option>Pago completo</option></select>
+              </div>
+              <div class="fld"><label>Monto ($)</label><input id="cm" type="number" placeholder="0"></div>
+              <div class="fld"><label>Forma de pago</label>
+                <select id="cf"><option>Mercado Pago</option><option>Transferencia</option><option>Efectivo</option></select>
+              </div>
+            </div>
+            <div class="fld" style="margin-bottom:1rem">
+              <label>Notas / referencia</label>
+              <input id="cn" placeholder="Número de transferencia, comprobante...">
+            </div>
+            <button class="btn-primary" id="btnCobro" onclick="addCobro()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Registrar cobro
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Historial de cobros</span>
+            <span class="badge b-sage" id="cobTotal"></span>
+          </div>
+          <div class="tbl-scroll"><table class="t">
+            <thead><tr>
+              <th style="width:82px">Fecha</th><th style="width:145px">Clienta</th>
+              <th style="width:120px">Tipo</th><th style="width:92px">Monto</th>
+              <th style="width:130px">Forma</th><th style="width:170px">Notas</th>
+              <th style="width:44px"></th>
+            </tr></thead>
+            <tbody id="cobrosBody"></tbody>
+          </table></div>
+          <div class="card-footer" id="cobrosFoot"></div>
+        </div>
+      </div>
+
+      <!-- ── CLIENTAS ── -->
+      <div id="pg-clientas" class="page">
+        <div class="page-header">
+          <div class="page-title">Clientas</div>
+          <div class="page-sub" id="cliSub"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Base de clientas</span>
+            <span class="badge b-pink" id="cliCount"></span>
+          </div>
+          <div id="cliBody"></div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   CONFIG — REEMPLAZÁ CON TUS CREDENCIALES DE SUPABASE
+══════════════════════════════════════════════════════════ */
+const SUPABASE_URL  = 'https://TU_PROJECT_ID.supabase.co';  // <-- reemplazá
+const SUPABASE_ANON = 'TU_ANON_PUBLIC_KEY';                 // <-- reemplazá
+
+/* ══════════════════════════════════════════════════════════
+   INIT SUPABASE
+══════════════════════════════════════════════════════════ */
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* ══════════════════════════════════════════════════════════
+   ESTADO LOCAL (cache)
+══════════════════════════════════════════════════════════ */
+let pedidos = [];
+let cobros  = [];
+let curProv = '';
+let editId  = null;
+let filt    = 'all';
+let cV = null, cP = null;
+
+const ESTADOS = ['Seña pendiente','Seña pagada','Enviado a proveedor','Llegó al stock','Preparado','Entregado'];
+const ECLS    = ['e0','e1','e2','e3','e4','e5'];
+const PAGE_TITLES = {dash:'Dashboard',nuevo:'Nuevo pedido',pedidos:'Pedidos',cobros:'Cobros',clientas:'Clientas'};
+
+/* ══════════════════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════════════════ */
+const $  = id => document.getElementById(id);
+const fmt = n  => '$' + Math.round(n || 0).toLocaleString('es-AR');
+const esc = s  => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const ini = n  => (n||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const todayStr = () => new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+
+function toast(msg, type='success', dur=2800) {
+  const w = $('toastWrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icons = {
+    success: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
+    error:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    loading: '<div class="spinner"></div>'
+  };
+  t.innerHTML = (icons[type]||'') + msg;
+  w.appendChild(t);
+  if (dur) setTimeout(() => t.remove(), dur);
+  return t;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SUPABASE — PEDIDOS CRUD
+══════════════════════════════════════════════════════════ */
+async function fetchPedidos() {
+  const { data, error } = await db
+    .from('pedidos')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { toast('Error cargando pedidos: ' + error.message, 'error'); return; }
+  pedidos = data || [];
+}
+
+async function createPedido(payload) {
+  const { data, error } = await db
+    .from('pedidos')
+    .insert([payload])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+async function updatePedido(id, payload) {
+  // Quitamos columnas generadas — Supabase no acepta escribirlas
+  const { total, ganancia, saldo, ...safe } = payload;
+  const { data, error } = await db
+    .from('pedidos')
+    .update(safe)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+async function deletePedido(id) {
+  const { error } = await db.from('pedidos').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SUPABASE — COBROS CRUD
+══════════════════════════════════════════════════════════ */
+async function fetchCobros() {
+  const { data, error } = await db
+    .from('cobros')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { toast('Error cargando cobros: ' + error.message, 'error'); return; }
+  cobros = data || [];
+}
+
+async function createCobro(payload) {
+  const { data, error } = await db
+    .from('cobros')
+    .insert([payload])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+async function deleteCobro(id) {
+  const { error } = await db.from('cobros').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/* ══════════════════════════════════════════════════════════
+   UI — NAVIGATION
+══════════════════════════════════════════════════════════ */
+function goPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nitem').forEach(b => b.classList.remove('on'));
+  $('pg-' + id).classList.add('on');
+  if (btn) btn.classList.add('on');
+  $('topTitle').textContent = PAGE_TITLES[id] || '';
+  closeSidebar();
+  if (id === 'dash')     renderDash();
+  if (id === 'pedidos')  renderPedidos();
+  if (id === 'cobros')   renderCobros();
+  if (id === 'clientas') renderClientas();
+}
+
+function toggleSidebar() {
+  $('sidebar').classList.toggle('open');
+  $('drawerBg').classList.toggle('open');
+}
+function closeSidebar() {
+  $('sidebar').classList.remove('open');
+  $('drawerBg').classList.remove('open');
+}
+
+/* ══════════════════════════════════════════════════════════
+   UI — PROVEEDOR SELECTOR & PRECIO PREVIEW
+══════════════════════════════════════════════════════════ */
+function selProv(p) {
+  curProv = p;
+  $('sbP').className = 'seg-btn' + (p === 'p' ? ' sp' : '');
+  $('sbL').className = 'seg-btn' + (p === 'l' ? ' sl' : '');
+  $('wP').style.display = p === 'p' ? 'flex' : 'none';
+  $('wL').style.display = p === 'l' ? 'flex' : 'none';
+}
+
+function calcP() {
+  const c  = parseFloat($('fcant').value)   || 0;
+  const pr = parseFloat($('fprecio').value) || 0;
+  const co = parseFloat($('fcosto').value)  || 0;
+  const se = parseFloat($('fseña').value)   || 0;
+  const tot = c * pr, gan = c * (pr - co), sal = Math.max(0, tot - se);
+  $('mpTotal').textContent = pr ? fmt(tot) : '—';
+  $('mpGan').textContent   = pr ? fmt(gan) : '—';
+  $('mpSeña').textContent  = pr ? fmt(se)  : '—';
+  $('mpSaldo').textContent = pr ? fmt(sal) : '—';
+}
+
+function getTipo() {
+  if (curProv === 'p') return $('ftP').value;
+  if (curProv === 'l') return $('ftL').value;
+  return '';
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION — AGREGAR PEDIDO
+══════════════════════════════════════════════════════════ */
+async function addPedido() {
+  const nombre = $('fn').value.trim();
+  const ig     = $('fig').value.trim();
+  const tel    = $('ftel').value.trim();
+  const talle  = $('ftalle').value;
+  const color  = $('fcolor').value.trim();
+  const cant   = parseFloat($('fcant').value)   || 1;
+  const precio = parseFloat($('fprecio').value) || 0;
+  const costo  = parseFloat($('fcosto').value)  || 0;
+  const seña   = parseFloat($('fseña').value)   || 0;
+  const notas  = $('fnotas').value.trim();
+  const tipo   = getTipo();
+
+  if (!nombre) { toast('Ingresá el nombre de la clienta', 'error'); return; }
+  if (!curProv) { toast('Elegí el proveedor', 'error'); return; }
+  if (!tipo)    { toast('Elegí el tipo de producto', 'error'); return; }
+
+  const btn = $('btnAdd');
+  btn.disabled = true;
+  const t = toast('Guardando pedido...', 'loading', 0);
+
+  try {
+    const payload = {
+      fecha: todayStr(), prov: curProv, nombre, ig, tel,
+      tipo, talle, color, cant, precio, costo, seña, notas,
+      estado: seña > 0 ? 'Seña pagada' : 'Seña pendiente'
+    };
+    const saved = await createPedido(payload);
+    pedidos.unshift(saved);
+
+    // Auto-cobro si dejó seña
+    if (seña > 0) {
+      const cob = await createCobro({ fecha: todayStr(), cli: nombre, tipo: 'Seña', monto: seña, forma: '—', notas: '' });
+      cobros.unshift(cob);
+    }
+
+    t.remove();
+    toast('Pedido guardado', 'success');
+    clearForm();
+  } catch (err) {
+    t.remove();
+    toast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function clearForm() {
+  ['fn','fig','ftel','fcolor','fprecio','fcosto','fseña','fnotas'].forEach(id => $(id).value = '');
+  $('fcant').value = 1;
+  $('ftP').value = ''; $('ftL').value = ''; $('ftalle').value = '';
+  curProv = '';
+  $('sbP').className = 'seg-btn'; $('sbL').className = 'seg-btn';
+  $('wP').style.display = 'none'; $('wL').style.display = 'none';
+  calcP();
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION — EDITAR PEDIDO
+══════════════════════════════════════════════════════════ */
+function openEdit(id) {
+  const p = pedidos.find(x => x.id === id);
+  if (!p) return;
+  editId = id;
+
+  const curEI = ESTADOS.indexOf(p.estado);
+  const stepBar = `
+    <span class="slabel">Estado — tocá para cambiar</span>
+    <div class="stepper">
+      ${ESTADOS.map((e,i) => `<div class="step ${i < curEI ? 'done' : i === curEI ? 'cur' : ''}" onclick="setEstadoEdit(${i})">${e}</div>`).join('')}
+    </div>`;
+
+  $('editBody').innerHTML = `
+    <div style="margin-bottom:.75rem;display:flex;align-items:center;gap:6px">
+      <span class="badge ${p.prov === 'p' ? 'b-sage' : 'b-pink'}">${p.prov === 'p' ? 'Pijamas' : 'Lencería'}</span>
+      <span style="font-size:11px;color:var(--text-3);font-family:Inter,sans-serif">ID #${p.id}</span>
+    </div>
+    ${stepBar}
+    <div class="fg">
+      <div class="fld"><label>Nombre</label><input id="en" value="${esc(p.nombre)}"></div>
+      <div class="fld"><label>Instagram</label><input id="eig" value="${esc(p.ig||'')}"></div>
+      <div class="fld"><label>Teléfono</label><input id="etel" value="${esc(p.tel||'')}"></div>
+      <div class="fld"><label>Producto</label><input id="etipo" value="${esc(p.tipo)}"></div>
+      <div class="fld"><label>Talle</label><input id="etalle" value="${esc(p.talle||'')}"></div>
+      <div class="fld"><label>Color</label><input id="ecolor" value="${esc(p.color||'')}"></div>
+      <div class="fld"><label>Cantidad</label><input id="ecant" type="number" value="${p.cant}" oninput="recalcEdit()"></div>
+      <div class="fld"><label>Precio ($)</label><input id="eprecio" type="number" value="${p.precio}" oninput="recalcEdit()"></div>
+      <div class="fld"><label>Costo ($)</label><input id="ecosto" type="number" value="${p.costo}" oninput="recalcEdit()"></div>
+      <div class="fld"><label>Seña ($)</label><input id="eseña" type="number" value="${p.seña}" oninput="recalcEdit()"></div>
+    </div>
+    <div class="mpreview" style="margin-bottom:1rem">
+      <div class="mp-item"><div class="mp-label">Total</div><div class="mp-val" id="epT">${fmt(p.total)}</div></div>
+      <div class="mp-item"><div class="mp-label">Ganancia</div><div class="mp-val sage" id="epG">${fmt(p.ganancia)}</div></div>
+      <div class="mp-item"><div class="mp-label">Seña</div><div class="mp-val" id="epS">${fmt(p.seña)}</div></div>
+      <div class="mp-item"><div class="mp-label">Saldo</div><div class="mp-val pink" id="epSa">${fmt(p.saldo)}</div></div>
+    </div>
+    <div class="fld"><label>Notas</label><textarea id="enotas" rows="2">${esc(p.notas||'')}</textarea></div>`;
+
+  $('editBg').classList.add('open');
+}
+
+function setEstadoEdit(i) {
+  const p = pedidos.find(x => x.id === editId);
+  if (!p) return;
+  p.estado = ESTADOS[i];
+  document.querySelectorAll('#editBody .stepper .step').forEach((s, j) => {
+    s.className = 'step' + (j < i ? ' done' : j === i ? ' cur' : '');
+  });
+}
+
+function recalcEdit() {
+  const c  = parseFloat($('ecant').value)   || 0;
+  const pr = parseFloat($('eprecio').value) || 0;
+  const co = parseFloat($('ecosto').value)  || 0;
+  const se = parseFloat($('eseña').value)   || 0;
+  $('epT').textContent  = fmt(c * pr);
+  $('epG').textContent  = fmt(c * (pr - co));
+  $('epS').textContent  = fmt(se);
+  $('epSa').textContent = fmt(Math.max(0, c * pr - se));
+}
+
+async function saveEdit() {
+  const p = pedidos.find(x => x.id === editId);
+  if (!p) { closeEdit(); return; }
+
+  const payload = {
+    nombre:  $('en').value,
+    ig:      $('eig').value,
+    tel:     $('etel').value,
+    tipo:    $('etipo').value,
+    talle:   $('etalle').value,
+    color:   $('ecolor').value,
+    notas:   $('enotas').value,
+    cant:    parseFloat($('ecant').value)   || 1,
+    precio:  parseFloat($('eprecio').value) || 0,
+    costo:   parseFloat($('ecosto').value)  || 0,
+    seña:    parseFloat($('eseña').value)   || 0,
+    estado:  p.estado
+  };
+
+  const btn = $('btnSaveEdit');
+  btn.disabled = true;
+  const t = toast('Guardando cambios...', 'loading', 0);
+
+  try {
+    const updated = await updatePedido(editId, payload);
+    const idx = pedidos.findIndex(x => x.id === editId);
+    if (idx !== -1) pedidos[idx] = updated;
+    t.remove();
+    toast('Cambios guardados', 'success');
+    closeEdit();
+    const active = document.querySelector('.page.on');
+    if (active.id === 'pg-pedidos') renderPedidos();
+    else renderDash();
+  } catch (err) {
+    t.remove();
+    toast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function closeEdit() {
+  $('editBg').classList.remove('open');
+  editId = null;
+}
+
+async function delPedido(id) {
+  if (!confirm('¿Eliminar este pedido? Esta acción no se puede deshacer.')) return;
+  const t = toast('Eliminando...', 'loading', 0);
+  try {
+    await deletePedido(id);
+    pedidos = pedidos.filter(p => p.id !== id);
+    t.remove();
+    toast('Pedido eliminado', 'success');
+    const active = document.querySelector('.page.on');
+    if (active.id === 'pg-pedidos') renderPedidos();
+    else renderDash();
+  } catch (err) {
+    t.remove();
+    toast('Error: ' + err.message, 'error');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION — COBROS
+══════════════════════════════════════════════════════════ */
+async function addCobro() {
+  const cli   = $('cc').value.trim();
+  const monto = parseFloat($('cm').value) || 0;
+  if (!cli || !monto) { toast('Completá clienta y monto', 'error'); return; }
+
+  const btn = $('btnCobro');
+  btn.disabled = true;
+  const t = toast('Registrando cobro...', 'loading', 0);
+
+  try {
+    const payload = {
+      fecha: todayStr(), cli, tipo: $('ct').value,
+      monto, forma: $('cf').value, notas: $('cn').value.trim()
+    };
+    const saved = await createCobro(payload);
+    cobros.unshift(saved);
+    $('cc').value = ''; $('cm').value = ''; $('cn').value = '';
+    t.remove();
+    toast('Cobro registrado', 'success');
+    renderCobros();
+  } catch (err) {
+    t.remove();
+    toast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function delCobro(id) {
+  const t = toast('Eliminando...', 'loading', 0);
+  try {
+    await deleteCobro(id);
+    cobros = cobros.filter(c => c.id !== id);
+    t.remove();
+    toast('Cobro eliminado', 'success');
+    renderCobros();
+  } catch (err) {
+    t.remove();
+    toast('Error: ' + err.message, 'error');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER — HELPERS
+══════════════════════════════════════════════════════════ */
+function estadoPill(e) {
+  const i = ESTADOS.indexOf(e);
+  return `<span class="badge ${ECLS[i < 0 ? 0 : i]}">${esc(e)}</span>`;
+}
+
+function buildRow(p) {
+  const saldoCell = p.saldo > 0
+    ? `<span class="badge b-amber">${fmt(p.saldo)}</span>`
+    : `<span class="badge b-green">Pagado</span>`;
+  return `<tr class="trow">
+    <td><div class="av">${ini(p.nombre)}</div></td>
+    <td><div style="font-weight:600;font-size:12px">${esc(p.nombre)}</div>${p.ig ? `<div style="font-size:11px;color:var(--pink);font-family:Inter,sans-serif">${esc(p.ig)}</div>` : ''}</td>
+    <td>${esc(p.tipo)}</td>
+    <td style="color:var(--text-3)">${esc(p.talle||'—')}${p.color ? ' · ' + esc(p.color) : ''}</td>
+    <td style="text-align:center">${p.cant}</td>
+    <td style="font-weight:600">${fmt(p.total)}</td>
+    <td style="color:var(--text-3)">${fmt(p.seña)}</td>
+    <td>${saldoCell}</td>
+    <td>${estadoPill(p.estado)}</td>
+    <td style="white-space:nowrap">
+      <button class="tbl-action" onclick="openEdit(${p.id})">editar</button>
+      <button class="tbl-action del" onclick="delPedido(${p.id})">✕</button>
+    </td></tr>`;
+}
+
+function buildCard(p) {
+  const saldo = p.saldo > 0
+    ? `<span class="badge b-amber">Debe ${fmt(p.saldo)}</span>`
+    : `<span class="badge b-green">Pagado</span>`;
+  return `<div class="oc">
+    <div class="oc-top">
+      <div class="oc-av">${ini(p.nombre)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="oc-name">${esc(p.nombre)}</div>
+        ${p.ig ? `<div class="oc-ig">${esc(p.ig)}</div>` : ''}
+      </div>
+      ${estadoPill(p.estado)}
+    </div>
+    <div class="oc-product">${esc(p.tipo)}${p.talle ? ' · ' + esc(p.talle) : ''}${p.color ? ' · ' + esc(p.color) : ''}</div>
+    <div class="oc-bottom">
+      <div><div class="oc-total">${fmt(p.total)}</div><div class="oc-seña">Seña: ${fmt(p.seña)}</div></div>
+      ${saldo}
+    </div>
+    <div class="oc-actions">
+      <button class="oc-btn oc-btn-edit" onclick="openEdit(${p.id})">Editar</button>
+      <button class="oc-btn oc-btn-del" onclick="delPedido(${p.id})">Eliminar</button>
+    </div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER — PAGES
+══════════════════════════════════════════════════════════ */
+function setFilt(f, btn) {
+  filt = f;
+  document.querySelectorAll('#fchips .chip').forEach(c => c.classList.remove('on'));
+  btn.classList.add('on');
+  renderPedidos();
+}
+
+function renderPedidos() {
+  const rows = pedidos.filter(p => {
+    if (filt === 'p')    return p.prov === 'p';
+    if (filt === 'l')    return p.prov === 'l';
+    if (filt === 'pend') return p.saldo > 0;
+    if (filt === 'ent')  return p.estado === 'Entregado';
+    return true;
+  });
+  const tV = rows.reduce((a,r) => a + Number(r.total), 0);
+  const tS = rows.reduce((a,r) => a + Number(r.saldo), 0);
+  const tG = rows.reduce((a,r) => a + Number(r.ganancia), 0);
+  $('pedSub').textContent = `${rows.length} pedido${rows.length !== 1 ? 's' : ''} · ${fmt(tV)} en ventas`;
+
+  let html = '<div class="card">';
+  if (!rows.length) {
+    html += '<div class="empty"><span class="empty-icon">✦</span>Sin pedidos con este filtro</div>';
+  } else {
+    html += `
+      <div class="tbl-scroll"><table class="t">
+        <thead><tr>
+          <th style="width:36px"></th><th style="width:145px">Clienta</th>
+          <th style="width:120px">Producto</th><th style="width:90px">Talle/Color</th>
+          <th style="width:42px">Cant</th><th style="width:82px">Total</th>
+          <th style="width:82px">Seña</th><th style="width:88px">Saldo</th>
+          <th style="width:140px">Estado</th><th style="width:80px"></th>
+        </tr></thead>
+        <tbody>${rows.map(buildRow).join('')}</tbody>
+      </table></div>
+      <div class="order-cards">${rows.map(buildCard).join('')}</div>`;
+  }
+  html += `<div class="card-footer">
+    <span>Ventas: <strong>${fmt(tV)}</strong></span>
+    <span>Pendiente: <strong style="color:var(--pink)">${fmt(tS)}</strong></span>
+    <span>Ganancia estimada: <strong style="color:var(--sage-dark)">${fmt(tG)}</strong></span>
+  </div></div>`;
+  $('pedBlock').innerHTML = html;
+}
+
+function renderCobros() {
+  const total = cobros.reduce((a,r) => a + Number(r.monto), 0);
+  $('cobTotal').textContent = fmt(total) + ' cobrado';
+  const byF = {};
+  cobros.forEach(r => { byF[r.forma] = (byF[r.forma] || 0) + Number(r.monto); });
+
+  $('cobrosBody').innerHTML = cobros.length
+    ? cobros.map(r => `<tr class="trow">
+        <td style="font-size:11px;color:var(--text-3)">${esc(r.fecha)}</td>
+        <td style="font-weight:600">${esc(r.cli)}</td>
+        <td><span class="badge b-sage">${esc(r.tipo)}</span></td>
+        <td style="font-weight:600">${fmt(r.monto)}</td>
+        <td style="font-size:11px;color:var(--text-3)">${esc(r.forma)}</td>
+        <td style="font-size:11px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis">${esc(r.notas||'')}</td>
+        <td><button class="tbl-action del" onclick="delCobro(${r.id})">✕</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-3);font-size:12px">Sin cobros registrados</td></tr>';
+
+  $('cobrosFoot').innerHTML = `<span>Total: <strong>${fmt(total)}</strong></span>`
+    + Object.entries(byF).map(([f,v]) => `<span>${esc(f)}: <strong>${fmt(v)}</strong></span>`).join('');
+}
+
+function renderClientas() {
+  const names = [...new Set(pedidos.map(p => p.nombre))];
+  $('cliCount').textContent = names.length + ' registradas';
+  $('cliSub').textContent   = names.length + ' clientas';
+  if (!names.length) {
+    $('cliBody').innerHTML = '<div class="empty"><span class="empty-icon">✦</span>Sin clientas todavía</div>';
+    return;
+  }
+  $('cliBody').innerHTML = names.map(n => {
+    const ped = pedidos.filter(p => p.nombre === n);
+    const tV  = ped.reduce((a,p) => a + Number(p.total), 0);
+    const tS  = ped.reduce((a,p) => a + Number(p.saldo), 0);
+    const ig  = ped[0].ig || '', tel = ped[0].tel || '';
+    return `<div class="cli-row">
+      <div class="cli-av">${ini(n)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="cli-name">${esc(n)}</div>
+        ${ig ? `<div class="cli-ig">${esc(ig)}</div>` : ''}
+        <div class="cli-stats">
+          <span class="cli-stat">${ped.length} pedido${ped.length !== 1 ? 's' : ''}</span>
+          <span class="cli-stat">Ventas <strong>${fmt(tV)}</strong></span>
+          <span class="cli-stat">Cobrado <strong>${fmt(tV - tS)}</strong></span>
+          ${tel ? `<span class="cli-stat">${esc(tel)}</span>` : ''}
+        </div>
+      </div>
+      ${tS > 0
+        ? `<span class="badge b-amber">Debe ${fmt(tS)}</span>`
+        : `<span class="badge b-green">Al día</span>`}
+    </div>`;
+  }).join('');
+}
+
+function renderDash() {
+  const tV  = pedidos.reduce((a,p) => a + Number(p.total), 0);
+  const tS  = pedidos.reduce((a,p) => a + Number(p.saldo), 0);
+  const tG  = pedidos.reduce((a,p) => a + Number(p.ganancia), 0);
+  const act = pedidos.filter(p => p.estado !== 'Entregado').length;
+
+  const kpis = [
+    { l:'Pedidos activos',   v: act,     ic:'ki-rose',  c:'#E91E63', svg:'<rect x="9" y="3" width="6" height="4" rx="1"/><path d="M7 5H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>', sub:'sin entregar' },
+    { l:'Ventas totales',    v: fmt(tV), ic:'ki-amber', c:'#F59E0B', svg:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', sub:'acumuladas' },
+    { l:'Por cobrar',        v: fmt(tS), ic:'ki-rose',  c:'#E91E63', svg:'<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>', sub:'saldos pendientes' },
+    { l:'Ganancia estimada', v: fmt(tG), ic:'ki-sage',  c:'#7BAA9E', svg:'<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>', sub:'sobre costo' }
+  ];
+  $('kpiGrid').innerHTML = kpis.map(k => `
+    <div class="kpi-card">
+      <div class="kpi-icon ${k.ic}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${k.c}" stroke-width="1.8">${k.svg}</svg>
+      </div>
+      <div class="kpi-label">${k.l}</div>
+      <div class="kpi-value">${k.v}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+
+  const pend = pedidos.filter(p => p.saldo > 0);
+  $('dpCount').textContent = pend.length + (pend.length === 1 ? ' pedido' : ' pedidos');
+  $('dashPBody').innerHTML = pend.length
+    ? pend.slice(0,8).map(p => `<tr class="trow">
+        <td><div class="av">${ini(p.nombre)}</div></td>
+        <td style="font-weight:600;font-size:12px">${esc(p.nombre)}</td>
+        <td>${esc(p.tipo)}</td>
+        <td style="font-weight:600">${fmt(p.total)}</td>
+        <td style="color:var(--text-3)">${fmt(p.seña)}</td>
+        <td><span class="badge b-amber">${fmt(p.saldo)}</span></td>
+        <td>${estadoPill(p.estado)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-3);font-size:12px">Sin saldos pendientes</td></tr>';
+
+  renderCharts();
+}
+
+function renderCharts() {
+  const byF = {};
+  pedidos.forEach(p => { byF[p.fecha] = (byF[p.fecha] || 0) + Number(p.total); });
+  const labs = Object.keys(byF).slice(-7);
+  const vals = labs.map(l => byF[l]);
+
+  if (cV) { cV.destroy(); cV = null; }
+  cV = new Chart($('cVentas'), {
+    type: 'bar',
+    data: {
+      labels: labs.length ? labs : ['Sin datos'],
+      datasets: [{ data: vals.length ? vals : [0], backgroundColor: '#F8BBD0', borderColor: '#E91E63', borderWidth: 1.5, borderRadius: 6, hoverBackgroundColor: '#F48FB1' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 9, family: 'Inter' }, color: '#9E9E9E' } },
+        y: { grid: { color: 'rgba(0,0,0,0.04)' }, border: { display: false }, ticks: { font: { size: 9, family: 'Inter' }, color: '#9E9E9E', callback: v => '$' + Math.round(v/1000) + 'k' } }
+      }
+    }
+  });
+
+  const tPij = pedidos.filter(p => p.prov === 'p').reduce((a,r) => a + Number(r.total), 0);
+  const tLen = pedidos.filter(p => p.prov === 'l').reduce((a,r) => a + Number(r.total), 0);
+  if (cP) { cP.destroy(); cP = null; }
+  cP = new Chart($('cProv'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Pijamas', 'Lencería'],
+      datasets: [{ data: [tPij || 0, tLen || 0], backgroundColor: ['#B2D8D1','#F8BBD0'], borderWidth: 0, hoverOffset: 5 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '70%',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + fmt(c.parsed) } } }
+    }
+  });
+  $('provLeg').innerHTML =
+    `<span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:2px;background:#B2D8D1"></span>Pijamas ${fmt(tPij)}</span>` +
+    `<span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:2px;background:#F8BBD0"></span>Lencería ${fmt(tLen)}</span>`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BOOTSTRAP — carga inicial
+══════════════════════════════════════════════════════════ */
+(async function init() {
+  // Fecha
+  const d = new Date();
+  const long = d.toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  $('sideDate').textContent = long.charAt(0).toUpperCase() + long.slice(1);
+  $('dashSub').textContent  = long.charAt(0).toUpperCase() + long.slice(1);
+
+  // Test conexión Supabase
+  const tConn = toast('Conectando a la base de datos...', 'loading', 0);
+  try {
+    const { error } = await db.from('pedidos').select('id').limit(1);
+    tConn.remove();
+    if (error) throw error;
+    $('connDot').classList.remove('off');
+    $('connText').textContent = 'Conectado · Supabase';
+    toast('Base de datos conectada', 'success');
+  } catch (err) {
+    tConn.remove();
+    $('connText').textContent = 'Sin conexión';
+    toast('No se pudo conectar. Revisá las credenciales en index.html', 'error', 6000);
+  }
+
+  // Carga inicial
+  const tLoad = toast('Cargando datos...', 'loading', 0);
+  try {
+    await Promise.all([fetchPedidos(), fetchCobros()]);
+    tLoad.remove();
+    renderDash();
+  } catch (err) {
+    tLoad.remove();
+    toast('Error cargando datos: ' + err.message, 'error');
+  }
+})();
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEdit(); });
+</script>
+</body>
+</html>

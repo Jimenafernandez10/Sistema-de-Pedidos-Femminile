@@ -1,0 +1,62 @@
+-- ═══════════════════════════════════
+-- FEMMINILE — SCHEMA LIMPIO
+-- ═══════════════════════════════════
+
+-- TABLA PEDIDOS
+create table if not exists public.pedidos (
+  id          bigserial primary key,
+  created_at  timestamptz default now(),
+  fecha       text        not null,
+  prov        text        not null check (prov in ('p','l')),
+  nombre      text        not null,
+  ig          text,
+  tel         text,
+  tipo        text        not null,
+  talle       text,
+  color       text,
+  cant        numeric     not null default 1,
+  precio      numeric     not null default 0,
+  costo       numeric     not null default 0,
+  seña        numeric     not null default 0,
+  total       numeric     generated always as (cant * precio) stored,
+  ganancia    numeric     generated always as (cant * (precio - costo)) stored,
+  saldo       numeric     generated always as (greatest(0, (cant * precio) - seña)) stored,
+  notas       text,
+  estado      text        not null default 'Seña pendiente'
+                check (estado in (
+                  'Seña pendiente',
+                  'Seña pagada',
+                  'Enviado a proveedor',
+                  'Llegó al stock',
+                  'Preparado',
+                  'Entregado'
+                ))
+);
+
+-- TABLA COBROS
+create table if not exists public.cobros (
+  id          bigserial primary key,
+  created_at  timestamptz default now(),
+  fecha       text        not null,
+  cli         text        not null,
+  tipo        text        not null,
+  monto       numeric     not null default 0,
+  forma       text        not null default 'Efectivo',
+  notas       text
+);
+
+-- SEGURIDAD (RLS abierta por ahora)
+alter table public.pedidos enable row level security;
+alter table public.cobros  enable row level security;
+
+create policy "allow_all_pedidos" on public.pedidos
+  for all using (true) with check (true);
+
+create policy "allow_all_cobros" on public.cobros
+  for all using (true) with check (true);
+
+-- ÍNDICES (para que cargue rápido)
+create index if not exists idx_pedidos_nombre on public.pedidos(nombre);
+create index if not exists idx_pedidos_prov   on public.pedidos(prov);
+create index if not exists idx_pedidos_estado on public.pedidos(estado);
+create index if not exists idx_cobros_cli     on public.cobros(cli);
