@@ -950,6 +950,21 @@ async function addPedido() {
     };
     const saved = await createPedido(payload);
 pedidos.unshift(saved);
+     const saved = await createPedido(payload);
+pedidos.unshift(saved);
+
+// 🔽 ENVIAR A MAKE
+try {
+  await fetch("https://hook.us2.make.com/nn1y7a822keo5p9ey5hegfws4dfl9l0t", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+} catch (err) {
+  console.error("Error enviando a Make:", err);
+}
 // Auto-cobro si dejó seña
 if (seña > 0) {
   const cob = await createCobro({
