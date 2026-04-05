@@ -949,12 +949,21 @@ async function addPedido() {
       estado: seña > 0 ? 'Seña pagada' : 'Seña pendiente'
     };
     const saved = await createPedido(payload);
-    pedidos.unshift(saved);
+pedidos.unshift(saved);
+
+// 🔽 GOOGLE SHEETS
 try {
-  await fetch("Thttps://script.google.com/u/0/home/projects/1pFGXpJ2GdEdDAwbrmGiwEEb1GAq1_xBie77VQWyQ733ad58XllYOyOUi/edit", {
+  await fetch("https://script.google.com/macros/s/AKfycbzPNN0Y1wCTjSPO7FUMW1s1oz8ZmfFZF93gKxI_LzHlN2zntAuM7rUw5uuIWFDNdzRdPA/exec", {
     method: "POST",
+    mode: "no-cors",
     headers: {
       "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+} catch (err) {
+  console.error("Error enviando a Sheets:", err);
+}
     },
     body: JSON.stringify(payload)
   });
