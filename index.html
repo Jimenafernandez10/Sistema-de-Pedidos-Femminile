@@ -695,6 +695,40 @@ table.t tr.trow:hover td{background:#FAFAFA;cursor:pointer}
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
+   async function cargarCatalogoPijamas() {
+
+  const { data, error } = await db
+    .from("productos")
+    .select("*")
+    .eq("activo", true);
+
+  if (error) {
+    console.error("Error cargando productos:", error);
+    return;
+  }
+
+  const cont = document.getElementById("catalogo");
+  cont.innerHTML = "";
+
+  data.forEach(p => {
+    const item = document.createElement("div");
+    item.style.border = "1px solid #ddd";
+    item.style.padding = "10px";
+    item.style.margin = "6px";
+    item.style.borderRadius = "10px";
+
+    item.innerHTML = `
+      <b>${p.categoria}</b> - ${p.subcategoria}<br>
+      Tela: ${p.tela ?? "-"}<br>
+      Largo: ${p.largo ?? "-"}<br>
+      Estampa: ${p.estampa ?? "-"}
+    `;
+
+    cont.appendChild(item);
+  });
+
+  console.log("Productos cargados:", data);
+}
 
 <script>
 /* ══════════════════════════════════════════════════════════
