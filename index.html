@@ -938,19 +938,19 @@ function getTipo() {
 
   // PROVEEDOR PIJAMAS / PANTS
   if (curProv === 'p') {
-
     const tela   = document.getElementById("ftTela")?.value || "";
     const modelo = document.getElementById("ftModelo")?.value || "";
     const largo  = document.getElementById("ftLargo")?.value || "";
 
-    // une solo los que tengan valor
     const partes = [tela, modelo, largo].filter(Boolean);
-
     return partes.join(" ");
   }
 
-  // LENCERIA (queda igual que antes)
-  if (curProv === 'l') return $('ftL').value;
+  // PROVEEDOR LENCERIA (ARREGLADO)
+  if (curProv === 'l') {
+    const tipoL = document.getElementById("ftL")?.value || "";
+    return tipoL;
+  }
 
   return '';
 }
