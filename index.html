@@ -935,8 +935,23 @@ function calcP() {
 }
 
 function getTipo() {
-  if (curProv === 'p') return $('ftP').value;
+
+  // PROVEEDOR PIJAMAS / PANTS
+  if (curProv === 'p') {
+
+    const tela   = document.getElementById("ftTela")?.value || "";
+    const modelo = document.getElementById("ftModelo")?.value || "";
+    const largo  = document.getElementById("ftLargo")?.value || "";
+
+    // une solo los que tengan valor
+    const partes = [tela, modelo, largo].filter(Boolean);
+
+    return partes.join(" ");
+  }
+
+  // LENCERIA (queda igual que antes)
   if (curProv === 'l') return $('ftL').value;
+
   return '';
 }
 
