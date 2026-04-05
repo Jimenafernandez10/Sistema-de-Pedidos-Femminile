@@ -942,6 +942,7 @@ function getTipo() {
     const largo  = document.getElementById("largoSelect")?.value || "";
 
     const partes = [modelo, tela, largo].filter(Boolean);
+     console.log({ modelo, tela, largo });
     return partes.join(" ");
   }
 
