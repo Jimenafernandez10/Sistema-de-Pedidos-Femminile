@@ -963,8 +963,7 @@ try {
   });
 } catch (err) {
   console.error("Error enviando a Sheets:", err);
-}
-
+};
 // Auto-cobro si dejó seña
 if (seña > 0) {
   const cob = await createCobro({
