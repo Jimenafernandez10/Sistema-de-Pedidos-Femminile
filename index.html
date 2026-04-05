@@ -936,17 +936,15 @@ function calcP() {
 
 function getTipo() {
 
-  // PROVEEDOR PIJAMAS / PANTS
   if (curProv === 'p') {
-    const tela   = document.getElementById("ftTela")?.value || "";
-    const modelo = document.getElementById("ftModelo")?.value || "";
-    const largo  = document.getElementById("ftLargo")?.value || "";
+    const tela   = document.getElementById("telaSelect")?.value || "";
+    const modelo = document.getElementById("subcategoriaSelect")?.value || "";
+    const largo  = document.getElementById("largoSelect")?.value || "";
 
-    const partes = [tela, modelo, largo].filter(Boolean);
+    const partes = [modelo, tela, largo].filter(Boolean);
     return partes.join(" ");
   }
 
-  // PROVEEDOR LENCERIA (ARREGLADO)
   if (curProv === 'l') {
     const tipoL = document.getElementById("ftL")?.value || "";
     return tipoL;
@@ -954,7 +952,6 @@ function getTipo() {
 
   return '';
 }
-
 /* ══════════════════════════════════════════════════════════
    ACTION — AGREGAR PEDIDO
 ══════════════════════════════════════════════════════════ */
