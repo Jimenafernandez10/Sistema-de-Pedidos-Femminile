@@ -964,18 +964,19 @@ try {
 } catch (err) {
   console.error("Error enviando a Sheets:", err);
 }
-    },
-    body: JSON.stringify(payload)
-  });
-} catch (err) {
-  console.error("Error enviando a Sheets:", err);
-}
-    // Auto-cobro si dejó seña
-    if (seña > 0) {
-      const cob = await createCobro({ fecha: todayStr(), cli: nombre, tipo: 'Seña', monto: seña, forma: '—', notas: '' });
-      cobros.unshift(cob);
-    }
 
+// Auto-cobro si dejó seña
+if (seña > 0) {
+  const cob = await createCobro({
+    fecha: todayStr(),
+    cli: nombre,
+    tipo: 'Seña',
+    monto: seña,
+    forma: '—',
+    notas: ''
+  });
+  cobros.unshift(cob);
+}
     t.remove();
     toast('Pedido guardado', 'success');
     clearForm();
